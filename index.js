@@ -31,9 +31,6 @@ app.listen(port, () => {
 
 
 
-
-
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qbl5b3c.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
     serverApi: {
@@ -82,7 +79,7 @@ async function run() {
 
 
 
-        
+
 
 
         await client.db("admin").command({ ping: 1 });
