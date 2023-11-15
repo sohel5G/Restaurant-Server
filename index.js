@@ -46,7 +46,7 @@ async function run() {
         
         const menuCollection = client.db('restaurant').collection('menu');
         const reviewCollection = client.db('restaurant').collection('reviews');
-
+        const cartCollection = client.db('restaurant').collection('carts');
 
 
         // get all menus public API
@@ -75,6 +75,30 @@ async function run() {
 
 
 
+        // Post a cart item 
+        app.post('/user/add-cart', async (req, res) => {
+            try {
+                const cartItem = req.body;
+                const result = await cartCollection.insertOne(cartItem);
+                res.send(result);
+            } catch (err) {
+                console.log(err.message)
+            }
+        })
+        // Post a cart item  end
+
+        // get carts items for a user 
+        app.get('/carts', async (req, res) => {
+            try {
+                const useremail = req.query.useremail;
+                const query = { cartItemUser : useremail}
+                const result = await cartCollection.find(query).toArray();
+                res.send(result);
+            } catch (err) {
+                console.log(err.message)
+            }
+        })
+        // get carts items for a user end
 
 
 
