@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+var jwt = require('jsonwebtoken');
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
@@ -48,6 +49,43 @@ async function run() {
         const reviewCollection = client.db('restaurant').collection('reviews');
         const cartCollection = client.db('restaurant').collection('carts');
         const userCollection = client.db('restaurant').collection('users');
+
+
+
+
+        // -----------  ACCESS TOKEN API ---------------------
+        app.post('/jwt', (req, res) => {
+            try {
+                const userEmail = req.body;
+                const token = jwt.sign(userEmail, process.env.SECRET_TOKEN, { expiresIn: '1h' });
+                res.send({ token });
+            } catch (err) {
+                console.log(err.message);
+            }
+        })
+
+        const verifyToken = (req, res, next) => {
+            console.log(req.headers.authorization);
+            if (!req.headers.authorization){
+                return res.status(401).send({message: 'Unauthorized access'});
+            }
+
+            const token = req.headers.authorization.split(' ')[1];
+            jwt.verify(token, process.env.SECRET_TOKEN, (err, decoded) => {
+                if(err){
+                    return res.status(401).send({ message: 'Unauthorized access' });
+                }
+
+                req.decoded = decoded
+                next();
+            })
+            
+        }
+        // -----------  ACCESS TOKEN API END------------------
+
+
+
+
 
 
         // get all menus public API
@@ -137,7 +175,7 @@ async function run() {
 
 
         // Get All users
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyToken, async (req, res) => {
             const result = await userCollection.find().toArray();
             res.send(result);
         })
@@ -145,16 +183,16 @@ async function run() {
 
 
         // make Admin a user
-        app.patch('/users/make-admin/:id', async(req, res) => {
+        app.patch('/users/make-admin/:id', async (req, res) => {
             const itemId = req.params.id;
-            const query = {_id: new ObjectId(itemId)};
-            
+            const query = { _id: new ObjectId(itemId) };
+
             const updatedDoc = {
-                $set:{
+                $set: {
                     role: 'admin'
                 }
             }
-            
+
             const result = await userCollection.updateOne(query, updatedDoc);
             res.send(result);
         })

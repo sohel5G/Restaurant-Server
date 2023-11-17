@@ -1,5 +1,5 @@
 
-#Restaurant Complete project 
+## Restaurant Complete project 
 
 1. create token from the server
 2. Send token to frontend and set to browser cookie / local store
