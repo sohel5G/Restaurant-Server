@@ -13,17 +13,17 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-    try{
+    try {
         res.send('Server is running');
-    }catch(err){
+    } catch (err) {
         console.log(err.message);
     }
 })
 
 app.listen(port, () => {
-    try{
+    try {
         console.log('Server is running on port :', port);
-    }catch(err){
+    } catch (err) {
         console.log(err.message);
     }
 })
@@ -43,18 +43,19 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // await client.connect();
-        
+
         const menuCollection = client.db('restaurant').collection('menu');
         const reviewCollection = client.db('restaurant').collection('reviews');
         const cartCollection = client.db('restaurant').collection('carts');
+        const userCollection = client.db('restaurant').collection('users');
 
 
         // get all menus public API
-        app.get('/menus', async(req, res) => {
-            try{
+        app.get('/menus', async (req, res) => {
+            try {
                 const result = await menuCollection.find().toArray();
                 res.send(result);
-            }catch(err){
+            } catch (err) {
                 console.log(err.message)
             }
         })
@@ -63,11 +64,11 @@ async function run() {
 
 
         // get all reviews public API
-        app.get('/reviews', async(req, res) => {
-            try{
+        app.get('/reviews', async (req, res) => {
+            try {
                 const result = await reviewCollection.find().toArray();
                 res.send(result);
-            }catch(err){
+            } catch (err) {
                 console.log(err.message)
             }
         })
@@ -91,7 +92,7 @@ async function run() {
         app.get('/carts', async (req, res) => {
             try {
                 const useremail = req.query.useremail;
-                const query = { cartItemUser : useremail}
+                const query = { cartItemUser: useremail }
                 const result = await cartCollection.find(query).toArray();
                 res.send(result);
             } catch (err) {
@@ -100,8 +101,9 @@ async function run() {
         })
         // get carts items for a user end
 
+
         // Delete a cart item 
-        app.get('/user/delete-cart/:id', async (req, res) => {
+        app.delete('/user/delete-cart/:id', async (req, res) => {
             try {
                 const itemId = req.params.id;
                 const query = { _id: new ObjectId(itemId) }
@@ -114,6 +116,63 @@ async function run() {
         // Delete a cart item end
 
 
+        // Store a user 
+        app.post('/store-users', async (req, res) => {
+            try {
+                const newUser = req.body;
+
+                const query = { email: newUser.email };
+                const existingUser = await userCollection.findOne(query);
+                if (existingUser) {
+                    return res.send({ message: 'user already exists', insertedId: null });
+                }
+
+                const result = await userCollection.insertOne(newUser);
+                res.send(result)
+            } catch (err) {
+                console.log(err.message)
+            }
+        })
+        //Store a user end
+
+
+        // Get All users
+        app.get('/users', async (req, res) => {
+            const result = await userCollection.find().toArray();
+            res.send(result);
+        })
+        // Get All users End
+
+
+        // make Admin a user
+        app.patch('/users/make-admin/:id', async(req, res) => {
+            const itemId = req.params.id;
+            const query = {_id: new ObjectId(itemId)};
+            
+            const updatedDoc = {
+                $set:{
+                    role: 'admin'
+                }
+            }
+            
+            const result = await userCollection.updateOne(query, updatedDoc);
+            res.send(result);
+        })
+        // make Admin a user end
+
+
+        // Delete a user 
+        app.delete('/users/:id', async (req, res) => {
+            try {
+                const itemId = req.params.id;
+                const query = { _id: new ObjectId(itemId) }
+                const result = await userCollection.deleteOne(query);
+                res.send(result);
+            } catch (err) {
+                console.log(err.message)
+            }
+        })
+        // Delete a user end
 
 
 
