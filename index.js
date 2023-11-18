@@ -67,6 +67,8 @@ async function run() {
             }
         })
 
+
+
         const verifyToken = (req, res, next) => {
 
             if (!req.headers.authorization) {
@@ -83,6 +85,8 @@ async function run() {
                 next();
             })
         }
+
+
 
         // we need to use verifyAdmin after verifyToken 
         const verifyAdmin = async (req, res, next) => {
@@ -109,6 +113,21 @@ async function run() {
 
 
 
+        // Add menu item 
+        app.post('/admin/add-item', verifyToken, verifyAdmin, async(req, res) => {
+            try{
+
+                const menuItem = req.body;
+                const result = await menuCollection.insertOne(menuItem);
+                res.send(result);
+
+            }catch(err){
+                console.log(err.message)
+            }
+        })
+        // Add menu item end
+
+
 
         // get all menus public API
         app.get('/menus', async (req, res) => {
@@ -120,6 +139,21 @@ async function run() {
             }
         })
         // get all menus public API end
+
+
+        // Delete a menu item 
+        app.delete('/admin/delete-item/:id', verifyToken, verifyAdmin, async (req, res) => {
+            try {
+                const itemId = req.params.id;
+                const query = { _id: new ObjectId(itemId) }
+                const result = await menuCollection.deleteOne(query);
+                res.send(result);
+            } catch (err) {
+                console.log(err.message)
+            }
+        })
+        // Delete a menu item end
+
 
 
 
@@ -147,6 +181,8 @@ async function run() {
             }
         })
         // Post a cart item  end
+
+
 
         // get carts items for a user 
         app.get('/carts', async (req, res) => {
