@@ -51,11 +51,10 @@ async function run() {
         const reviewCollection = client.db('restaurant').collection('reviews');
         const cartCollection = client.db('restaurant').collection('carts');
         const userCollection = client.db('restaurant').collection('users');
+        const paymentDoneCollection = client.db('restaurant').collection('paymentdone');
 
 
-
-
-        // -----------  ACCESS TOKEN API ---------------------
+        // ----------- JWT ACCESS TOKEN API ---------------------
         app.post('/jwt', (req, res) => {
             try {
                 const userEmail = req.body;
@@ -98,7 +97,7 @@ async function run() {
             next();
         }
 
-        // -----------  ACCESS TOKEN API END------------------
+        // ----------- JWT ACCESS TOKEN API END------------------
 
 
 
@@ -108,10 +107,10 @@ async function run() {
 
         // -----------  STRIPE PAYMENT METHOD API------------------
         app.post('/create-stripe-payment-intent', async (req, res) => {
-            try{
+            try {
                 const { price } = req.body;
                 const amount = parseInt(price * 100);
-                
+
                 const paymentIntent = await stripe.paymentIntents.create({
                     amount: amount,
                     currency: 'usd',
@@ -122,7 +121,7 @@ async function run() {
                     clientSecret: paymentIntent.client_secret
                 })
 
-            }catch(err){
+            } catch (err) {
                 console.log(err.message)
             }
 
@@ -130,10 +129,53 @@ async function run() {
         // -----------  STRIPE PAYMENT METHOD API------------------
 
 
+        // -----------  POST ITEMS AFTER PAYMENT DONE------------------
+        app.post('/payment-done', async (req, res) => {
+            try {
+
+                const newPayment = req.body;
+                const paymentResult = await paymentDoneCollection.insertOne(newPayment);
+
+                const query = {
+                    _id: {
+                        $in: newPayment.cartIds.map(id => new ObjectId(id))
+                    }
+                }
+                const deleteResult = await cartCollection.deleteMany(query);
+
+                res.send({ paymentResult, deleteResult });
+
+            } catch (err) {
+                console.log(err);
+            }
+        })
+        // -----------  POST ITEMS AFTER PAYMENT DONE END------------------
 
 
 
-        
+
+
+
+        // Get all purchased item on reservation page
+        app.get('/my-reservation/:userEmail', async (req, res) => {
+            try{
+
+                const query = { userEmail: req.params.userEmail }
+
+                // if (req.params.userEmail !== req.decoded.email) {
+                //     return res.status(403).send({ message: 'forbidden access' });
+                // }
+
+                const result = await paymentDoneCollection.find(query).toArray();
+                res.send(result);
+
+            }catch(err){
+                console.log(err.message)
+            }
+        })
+        // Get all purchased item on reservation page end
+
+
 
 
 
