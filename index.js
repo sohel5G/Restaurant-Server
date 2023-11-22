@@ -158,7 +158,7 @@ async function run() {
 
         // Get all purchased item on reservation page
         app.get('/my-reservation/:userEmail', async (req, res) => {
-            try{
+            try {
 
                 const query = { userEmail: req.params.userEmail }
 
@@ -169,11 +169,103 @@ async function run() {
                 const result = await paymentDoneCollection.find(query).toArray();
                 res.send(result);
 
-            }catch(err){
+            } catch (err) {
                 console.log(err.message)
             }
         })
         // Get all purchased item on reservation page end
+
+
+
+
+
+        // Admin dashboard Statistic page API
+        app.get('/admin-stats', verifyToken, verifyAdmin, async (req, res) => {
+            try {
+                const users = await userCollection.estimatedDocumentCount();
+                const menuItems = await menuCollection.estimatedDocumentCount();
+                const orders = await paymentDoneCollection.estimatedDocumentCount();
+
+                // // this is not best way to get revenue
+                // const payments = await paymentDoneCollection.find().toArray();
+                // const revenue = payments.reduce((total, item) => total + item.totalPrice ,0);
+
+                // this is the best way to get revenue
+                const result = await paymentDoneCollection.aggregate([
+                    {
+                        $group: {
+                            _id: null,
+                            totalRevenue: {
+                                $sum: '$totalPrice'
+                            }
+                        }
+                    }
+                ]).toArray();
+
+                const revenue = result.length > 0 ? result[0].totalRevenue : 0;
+
+
+                res.send({
+                    users,
+                    menuItems,
+                    orders,
+                    revenue,
+                });
+
+            } catch (error) {
+                console.log(error);
+            }
+        })
+
+        //aggregate pipeline
+        app.get('/order-stats', verifyToken, verifyAdmin, async (req, res) => {
+            try{
+                const result = await paymentDoneCollection.aggregate([
+                    {
+                        $unwind: '$cartItemIds'
+                    },
+                    {
+                        $lookup: {
+                            from: 'menu',
+                            localField: 'cartItemIds',
+                            foreignField: '_id',
+                            as: 'cartItems'
+                        }
+                    },
+
+                    {
+                        $unwind: '$cartItems'
+                    },
+                    {
+                        $group: {
+                            _id: '$cartItems.category',
+                            quantity: { $sum: 1 },
+                            revenue: { $sum: '$cartItems.price'}
+                        }
+                    },
+                    
+                    {
+                        $project: {
+                            _id: 0,
+                            category: '$_id',
+                            quantity: '$quantity',
+                            revenue: '$revenue'
+                        }
+                    }
+
+                ]).toArray();
+
+                res.send(result);
+            
+            }catch(error){
+                console.log(error)
+            }
+        })
+
+
+
+        // Admin dashboard Statistic page API END
+
 
 
 
