@@ -19,5 +19,6 @@
 - display transaction Id.
 
 
+- Live link 1 > [https://restaurant-7c686.web.app/](https://restaurant-7c686.web.app/)
+- Live link 2 > [https://restaurant-7c686.netlify.app/](https://restaurant-7c686.netlify.app/)
 
-Live link > [https://restaurant-7c686.web.app/](https://restaurant-7c686.web.app/)
